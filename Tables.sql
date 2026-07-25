@@ -1,0 +1,97 @@
+USE HospitalAnalytics
+
+SELECT TOP 5 * FROM patients;
+
+SELECT TOP 5 * FROM doctors;
+
+SELECT TOP 5 * FROM appointments;
+
+SELECT TOP 5 * FROM treatments
+SELECT TOP 5 * FROM billing;
+
+SELECT COUNT(*) FROM patients;
+SELECT * FROM patients;
+SELECT patient_id, COUNT(*) AS Total FROM patients
+GROUP BY patient_id
+
+-- DATA CLEANING ----
+-- When performing Data Cleaning Process,
+-- First Create backup tables e.g. patients_cleaned, doctors_cleaned, appointments_cleaned and billing_cleaned 
+SELECT * INTO patients_cleaned FROM patients;
+SELECT * INTO doctors_cleaned FROM doctors;
+SELECT * INTO appointments_cleaned FROM appointments;
+SELECT * INTO treatment_cleaned FROM treatments;
+SELECT * INTO billing_cleaned FROM billing;
+
+-- Confirm how many rows exist
+SELECT COUNT(*) AS TotalPatients from patients_cleaned;
+SELECT COUNT(*) AS TotalDoctors from doctors_cleaned;
+SELECT COUNT(*) AS TotalAppointments from appointments;
+SELECT COUNT(*) AS TotalTreatments from treatment_cleaned;
+SELECT COUNT(*) AS Totalbilling from billing_cleaned;
+
+-- Inspect the data 
+SELECT TOP 10 * FROM patients_cleaned;
+
+-- Check Data Types
+EXEC sp_help patients_cleaned;
+
+-- Check duplicate primary keys
+SELECT patient_id, COUNT(*) AS Total FROM patients_cleaned
+GROUP BY patient_id
+HAVING COUNT(*)>1;
+
+-- check missing values
+SELECT 
+	COUNT(CASE WHEN patient_id is NULL THEN 1 END) AS MissingPatientID,
+	COUNT(CASE WHEN first_name is NULL THEN 1 END) AS MissingFirstName,
+	COUNT(CASE WHEN last_name is NULL THEN 1 END) AS MissingLastName,
+	COUNT(CASE WHEN gender is NULL THEN 1 END) AS MissingGender,
+	COUNT(CASE WHEN date_of_birth is NULL THEN 1 END) AS MissingDateofBirth,
+	COUNT(CASE WHEN contact_number is NULL THEN 1 END) AS MissingContactNumber,
+	COUNT(CASE WHEN registration_date is NULL THEN 1 END) AS MissingRegistrationDate,
+	COUNT(CASE WHEN insurance_provider is NULL THEN 1 END) AS MissingInsuranceProvider,
+	COUNT(CASE WHEN insurance_number is NULL THEN 1 END) AS MissingInsuranceNumber,
+	COUNT(CASE WHEN email is NULL THEN 1 END) AS MissingEmail
+FROM patients_cleaned;
+
+-- NB: when you execute the above code all values return 0, then that is a good sign
+
+-- Check for blank spaces
+SELECT * FROM patients
+WHERE 
+	TRIM(first_name) = ''
+	OR TRIM(last_name) = ''
+	OR TRIM(gender) = ''
+	OR TRIM(insurance_provider) = '';
+
+-- Check for duplicate emails
+SELECT email, COUNT(*) AS Total
+FROM patients_cleaned
+GROUP BY email
+HAVING COUNT(*) > 1;
+
+-- Standardize gender
+SELECT DISTINCT gender
+FROM patients_cleaned
+
+SELECT * FROM patients_cleaned;
+UPDATE patients_cleaned 
+SET gender =
+CASE 
+	WHEN UPPER(gender)='M' THEN 'Male'
+	WHEN UPPER(gender)='F' THEN 'Female'
+	ELSE gender
+END;
+
+UPDATE patients_cleaned 
+SET gender = 'Male'
+WHERE patient_id = 'P001';
+
+-- Validate dates, no patient should register before they are born
+SELECT * FROM patients
+WHERE registration_date < date_of_birth;
+
+SELECT * FROM patients
+WHERE registration_date > date_of_birth;
+
