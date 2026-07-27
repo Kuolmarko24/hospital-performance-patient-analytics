@@ -1,11 +1,8 @@
 USE HospitalAnalytics
 
 SELECT TOP 5 * FROM patients;
-
 SELECT TOP 5 * FROM doctors;
-
 SELECT TOP 5 * FROM appointments;
-
 SELECT TOP 5 * FROM treatments
 SELECT TOP 5 * FROM billing;
 
@@ -63,7 +60,7 @@ WHERE
 	TRIM(first_name) = ''
 	OR TRIM(last_name) = ''
 	OR TRIM(gender) = ''
-	OR TRIM(insurance_provider) = '';
+	OR TRIM(insurance_provider) ='';
 
 -- Check for duplicate emails
 SELECT email, COUNT(*) AS Total
@@ -75,7 +72,7 @@ HAVING COUNT(*) > 1;
 SELECT DISTINCT gender
 FROM patients_cleaned
 
-SELECT * FROM patients_cleaned;
+
 UPDATE patients_cleaned 
 SET gender =
 CASE 
@@ -84,14 +81,101 @@ CASE
 	ELSE gender
 END;
 
-UPDATE patients_cleaned 
+/*UPDATE patients_cleaned 
 SET gender = 'Male'
-WHERE patient_id = 'P001';
+WHERE patient_id = 'P001';*/
 
 -- Validate dates, no patient should register before they are born
 SELECT * FROM patients
 WHERE registration_date < date_of_birth;
 
+-- No patient should have a future registration
 SELECT * FROM patients
-WHERE registration_date > date_of_birth;
+WHERE registration_date > GETDATE();
+
+-- Calculate patient age
+SELECT * FROM patients_cleaned;
+SELECT 
+patient_id,
+first_name,
+last_name,
+DATEDIFF(YEAR, date_of_birth, GETDATE()) AS Age
+FROM patients_cleaned;
+
+-- Check for duplicate phone numbers
+SELECT * FROM patients_cleaned;
+SELECT 
+	contact_number, 
+	COUNT(*) AS Total
+FROM patients_cleaned
+GROUP BY contact_number
+HAVING COUNT(*)>1
+
+-- Check the length
+SELECT
+	patient_id,
+	contact_number,
+	LEN(contact_number) AS PhoneLength
+FROM patients_cleaned;
+
+-- Check Insurance providers
+SELECT distinct insurance_provider
+FROM patients_cleaned;
+
+-- Validate email format
+SELECT * FROM patients_cleaned
+WHERE email NOT LIKE '%@%.%'
+
+SELECT
+    patient_id,
+    first_name,
+    last_name,
+    gender,
+    date_of_birth,
+    email
+FROM patients_cleaned
+WHERE email IN
+(
+    SELECT email
+    FROM patients_cleaned
+    GROUP BY email
+    HAVING COUNT(*) > 1
+)
+ORDER BY email;
+
+-- ensure there are no impossible ages 
+SELECT
+    patient_id,
+    first_name,
+    last_name,
+    date_of_birth,
+    DATEDIFF(YEAR, date_of_birth, GETDATE()) AS Age
+FROM patients_cleaned
+ORDER BY Age DESC;
+
+
+-- duplicate emails
+SELECT
+    patient_id,
+    first_name,
+    last_name,
+    date_of_birth,
+    email
+FROM patients_cleaned
+WHERE email IN
+(
+    SELECT email
+    FROM patients_cleaned
+    GROUP BY email
+    HAVING COUNT(*) > 1
+)
+ORDER BY email, date_of_birth;
+
+-- referential integrity
+SELECT a.patient_id
+FROM appointments_cleaned a
+LEFT JOIN patients_cleaned p
+    ON a.patient_id = p.patient_id
+WHERE p.patient_id IS NULL;
+
 
