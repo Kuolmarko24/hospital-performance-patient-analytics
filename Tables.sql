@@ -259,3 +259,74 @@ GROUP BY specialization;
 
 --- END OF DATA CLEANING FOR DOCTOR'S TABLE ---
 
+-- DATA CLEANING FOR APPOINTMENTS_CLEANED -- 
+
+-- Record Count
+SELECT 
+	COUNT(*) AS TotalAppointments 
+FROM appointments_cleaned;
+
+-- duplicate appointments IDs
+SELECT 
+appointment_id,
+COUNT(*) AS Total
+FROM appointments_cleaned
+GROUP BY appointment_id
+HAVING COUNT(*)>1;
+
+-- missing values
+SELECT
+COUNT(CASE WHEN appointment_id IS NULL THEN 1 END) AS MissingAppointmentID,
+COUNT(CASE WHEN patient_id IS NULL THEN 1 END) AS MissingPatientID,
+COUNT(CASE WHEN doctor_id IS NULL THEN 1 END) AS MissingDoctorID,
+COUNT(CASE WHEN appointment_date IS NULL THEN 1 END) AS MissingDate,
+COUNT(CASE WHEN appointment_time IS NULL THEN 1 END) AS MissingTime,
+COUNT(CASE WHEN reason_for_visit IS NULL THEN 1 END) AS MissingReason,
+COUNT(CASE WHEN status IS NULL THEN 1 END) AS MissingStatus
+FROM appointments_cleaned;
+
+-- Appointment Status
+SELECT
+status,
+COUNT(*) AS Total
+FROM appointments_cleaned
+GROUP BY status;
+
+-- reasons for visit
+SELECT 
+	reason_for_visit,
+	COUNT(*) AS Total 
+FROM appointments_cleaned
+GROUP BY reason_for_visit
+ORDER BY Total DESC
+
+-- Check for future appointments relative to today's date
+SELECT * 
+FROM appointments_cleaned
+WHERE appointment_date>GETDATE();
+
+-- Appointment times: Let's understand the operating hours 
+SELECT
+MIN(appointment_time) AS EarliestAppointment,
+MAX(appointment_time) AS LatestAppointment
+FROM appointments_cleaned;
+
+/*
+Referential Integrity: 
+Even though we already verified patients and doctors separately, 
+we'll document both checks as part of the appointments table cleaning:
+*/
+-- Patient check
+SELECT a.patient_id
+FROM appointments_cleaned a
+LEFT JOIN patients_cleaned p
+ON a.patient_id = p.patient_id
+WHERE p.patient_id IS NULL;
+
+-- Doctor check
+SELECT a.doctor_id
+FROM appointments_cleaned a
+LEFT JOIN doctors_cleaned d
+ON a.doctor_id = d.doctor_id
+WHERE d.doctor_id IS NULL;
+-- END OF DATA CLEANING FOR APPOINTMENTS_CLEANED -- 
