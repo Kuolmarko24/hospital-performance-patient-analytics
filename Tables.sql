@@ -11,7 +11,7 @@ SELECT * FROM patients;
 SELECT patient_id, COUNT(*) AS Total FROM patients
 GROUP BY patient_id
 
--- DATA CLEANING ----
+-- DATA CLEANING FOR PATIENT_CLEANED TABLE ----
 -- When performing Data Cleaning Process,
 -- First Create backup tables e.g. patients_cleaned, doctors_cleaned, appointments_cleaned and billing_cleaned 
 SELECT * INTO patients_cleaned FROM patients;
@@ -177,5 +177,85 @@ FROM appointments_cleaned a
 LEFT JOIN patients_cleaned p
     ON a.patient_id = p.patient_id
 WHERE p.patient_id IS NULL;
+--- END OF PATIENT_CLEANED ---
 
+--- DATA CLEANING FOR DOCTOR'S TABLE ---
+-- Total number of doctors
+SELECT COUNT(*) AS TotalDoctors
+FROM doctors_cleaned;
+
+-- checking for duplicate IDs
+SELECT 
+doctor_id,
+COUNT(*) AS Total
+FROM doctors_cleaned
+GROUP BY doctor_id
+HAVING COUNT(*)>1;
+
+-- Checking for Missing values
+SELECT * FROM doctors_cleaned;
+SELECT 
+	COUNT(CASE WHEN doctor_id IS NULL THEN 1 END) AS MissingDoctorID,
+	COUNT(CASE WHEN first_name IS NULL THEN 1 END) AS MissingFirstName,
+	COUNT(CASE WHEN last_name IS NULL THEN 1 END) AS MissingLastName,
+	COUNT(CASE WHEN specialization IS NULL THEN 1 END) AS MissingSpecialisation,
+	COUNT(CASE WHEN phone_number IS NULL THEN 1 END) AS MissingPhone,
+	COUNT(CASE WHEN years_experience IS NULL THEN 1 END) AS MissingYearsExperience,
+	COUNT(CASE WHEN hospital_branch IS NULL THEN 1 END) AS MissingHospitalbranch,
+	COUNT(CASE WHEN email IS NULL THEN 1 END) AS MissingEmail
+FROM doctors_cleaned;
+
+-- checking for duplicate emails
+SELECT 
+	email,
+	COUNT(*) AS Total
+FROM doctors_cleaned
+GROUP BY email
+HAVING COUNT(*)>1;
+
+-- checking for duplicate phone numbers
+SELECT * FROM doctors_cleaned;
+SELECT 
+	phone_number,
+	COUNT(*) AS Total
+FROM doctors_cleaned
+GROUP BY phone_number
+HAVING COUNT(*)>1;
+
+-- Specialisations
+SELECT DISTINCT specialization 
+FROM doctors_cleaned;
+
+-- hospital branch
+SELECT DISTINCT hospital_branch 
+FROM doctors_cleaned;
+
+-- Years of experience
+SELECT 
+	doctor_id,
+	first_name,
+	last_name,
+	years_experience
+FROM doctors_cleaned
+ORDER BY years_experience DESC;
+
+/*
+We need to confirm that every doctor assigned to an
+appointment actually exists in the doctors table.
+*/
+
+SELECT a.doctor_id
+FROM appointments_cleaned a
+LEFT JOIN doctors_cleaned d
+ON a.doctor_id = d.doctor_id
+WHERE d.doctor_id IS NULL;
+
+-- how doctors are distributed by specialisation
+SELECT
+specialization,
+COUNT(*) AS TotalDoctors
+FROM doctors_cleaned
+GROUP BY specialization;
+
+--- END OF DATA CLEANING FOR DOCTOR'S TABLE ---
 
