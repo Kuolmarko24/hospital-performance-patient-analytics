@@ -330,3 +330,69 @@ LEFT JOIN doctors_cleaned d
 ON a.doctor_id = d.doctor_id
 WHERE d.doctor_id IS NULL;
 -- END OF DATA CLEANING FOR APPOINTMENTS_CLEANED -- 
+
+
+-- DATA CLEANING FOR TREATMENT_CLEANED TABLE --
+
+-- Record Count 
+SELECT COUNT(*) AS TotalTreatments 
+FROM treatment_cleaned;
+
+-- Duplicate treatment IDs
+SELECT 
+	treatment_id,
+	COUNT(*) AS Total
+FROM treatment_cleaned
+GROUP BY treatment_id
+HAVING COUNT(*)>1;
+
+-- Missing values
+SELECT
+COUNT(CASE WHEN treatment_id IS NULL THEN 1 END) AS MissingTreatmentID,
+COUNT(CASE WHEN appointment_id IS NULL THEN 1 END) AS MissingAppointmentID,
+COUNT(CASE WHEN treatment_type IS NULL THEN 1 END) AS MissingTreatmentType,
+COUNT(CASE WHEN description IS NULL THEN 1 END) AS MissingDescription,
+COUNT(CASE WHEN cost IS NULL THEN 1 END) AS MissingCost,
+COUNT(CASE WHEN treatment_date IS NULL THEN 1 END) AS MissingTreatmentDate
+FROM treatment_cleaned;
+
+-- Treatment types
+SELECT 
+	treatment_type,
+	COUNT(*) AS Total 
+FROM treatment_cleaned
+GROUP BY treatment_type
+ORDER BY Total DESC;
+
+-- Treatment descriptions
+SELECT
+description,
+COUNT(*) AS Total
+FROM treatment_cleaned
+GROUP BY description;
+
+-- Cost validation
+SELECT
+MIN(cost) AS MinimumCost,
+MAX(cost) AS MaximumCost,
+AVG(cost) AS AverageCost
+FROM treatment_cleaned;
+
+-- check for invalid values
+SELECT *
+FROM treatment_cleaned
+WHERE cost <= 0;
+
+-- treatment dates
+SELECT *
+FROM treatment_cleaned
+WHERE treatment_date > GETDATE();
+
+-- referential integrity
+SELECT t.appointment_id
+FROM treatment_cleaned t
+LEFT JOIN appointments_cleaned a
+ON t.appointment_id = a.appointment_id
+WHERE a.appointment_id IS NULL;
+
+-- END OF DATA CLEANING FOR TREATMENT_CLEANED TABLE --
