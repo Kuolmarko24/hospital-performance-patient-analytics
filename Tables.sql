@@ -396,3 +396,74 @@ ON t.appointment_id = a.appointment_id
 WHERE a.appointment_id IS NULL;
 
 -- END OF DATA CLEANING FOR TREATMENT_CLEANED TABLE --
+
+-- DATA CLEANING FOR BILLING_CLEANED TABLE --
+-- Record Count
+SELECT COUNT(*) AS TotalBills
+FROM billing_cleaned;
+
+-- Checking for Duplicate bills IDs
+SELECT 
+bill_id,
+COUNT(*) AS Total 
+FROM billing_cleaned
+GROUP BY bill_id
+HAVING COUNT(*)>1
+
+-- Checking for missing values
+SELECT
+	COUNT(CASE WHEN bill_id IS NULL THEN 1 END) AS MissingBillID,
+	COUNT(CASE WHEN patient_id IS NULL THEN 1 END) AS MissingPatientID,
+	COUNT(CASE WHEN treatment_id IS NULL THEN 1 END) AS MissingTreatmentID,
+	COUNT(CASE WHEN bill_date IS NULL THEN 1 END) AS MissingBillDate,
+	COUNT(CASE WHEN amount IS NULL THEN 1 END) AS MissingAmount,
+	COUNT(CASE WHEN payment_method IS NULL THEN 1 END) AS MissingPaymentMethod,
+	COUNT(CASE WHEN payment_status IS NULL THEN 1 END) AS MissingPaymentStatus
+FROM billing_cleaned;
+
+-- Payment methods
+SELECT
+payment_method,
+COUNT(*) AS Total
+FROM billing_cleaned
+GROUP BY payment_method;
+
+-- payment status
+SELECT
+payment_status,
+COUNT(*) AS Total
+FROM billing_cleaned
+GROUP BY payment_status;
+
+-- billing amount validation
+SELECT
+MIN(amount) AS MinimumBill,
+MAX(amount) AS MaximumBill,
+AVG(amount) AS AverageBill
+FROM billing_cleaned;
+
+-- invalid billing amounts
+SELECT *
+FROM billing_cleaned
+WHERE amount <= 0;
+
+-- future bill dates
+SELECT *
+FROM billing_cleaned
+WHERE bill_date > GETDATE();
+
+-- referential integrity
+SELECT b.treatment_id
+FROM billing_cleaned b
+LEFT JOIN treatment_cleaned t
+ON b.treatment_id = t.treatment_id
+WHERE t.treatment_id IS NULL;
+
+-- verify if every billed patient exists
+SELECT b.patient_id
+FROM billing_cleaned b
+LEFT JOIN patients_cleaned p
+ON b.patient_id = p.patient_id
+WHERE p.patient_id IS NULL;
+
+-- END OF DATA CLEANING FOR BILLING_CLEANED TABLE --
