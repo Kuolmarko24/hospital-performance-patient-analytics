@@ -1,0 +1,1 @@
+The hospital dataset contains 50 registered patients, 10 doctors, 200 appointments, and 200 treatments, generating a total revenue of 551,249.85 with an average billing amount of 2,756.25 per treatment. The one-to-one relationship between appointments, treatments, and bills demonstrates strong data consistency and enables reliable downstream analysis.
