@@ -307,8 +307,8 @@ WHERE appointment_date>GETDATE();
 
 -- Appointment times: Let's understand the operating hours 
 SELECT
-MIN(appointment_time) AS EarliestAppointment,
-MAX(appointment_time) AS LatestAppointment
+CAST(ROUND(MIN(appointment_time),2) AS DECIMAL(10,2)) AS EarliestAppointment,
+CAST(ROUND(MAX(appointment_time),2) AS DECIMAL(10,2)) AS LatestAppointment
 FROM appointments_cleaned;
 
 /*
@@ -373,9 +373,9 @@ GROUP BY description;
 
 -- Cost validation
 SELECT
-MIN(cost) AS MinimumCost,
-MAX(cost) AS MaximumCost,
-AVG(cost) AS AverageCost
+    CAST(ROUND(MIN(cost),2) AS DECIMAL(10,2)) AS MinimumCost,
+    CAST(ROUND(MAX(cost),2) AS DECIMAL(10,2)) AS MaximumCost,
+    CAST(ROUND(AVG(cost),2) AS DECIMAL(10,2)) AS AverageCost
 FROM treatment_cleaned;
 
 -- check for invalid values
@@ -437,9 +437,9 @@ GROUP BY payment_status;
 
 -- billing amount validation
 SELECT
-MIN(amount) AS MinimumBill,
-MAX(amount) AS MaximumBill,
-AVG(amount) AS AverageBill
+	CAST(ROUND(MIN(amount),2) AS DECIMAL(10,2)) AS MinimumBill,
+	CAST(ROUND(MAX(amount),2) AS DECIMAL(10,2)) AS MaximumBill,
+	CAST(ROUND(AVG(amount),2) AS DECIMAL(10,2)) AS AverageBill
 FROM billing_cleaned;
 
 -- invalid billing amounts
@@ -488,11 +488,11 @@ SELECT COUNT(*) AS TotalTreatments
 FROM treatment_cleaned;
 
 -- Total Revenue
-SELECT SUM(amount) AS TotalRevenue
+SELECT CAST(ROUND(SUM(amount),2) AS DECIMAL(10,2)) AS TotalRevenue
 FROM billing_cleaned;
 
 -- Average Bill
-SELECT AVG(amount) as AverageBill
+SELECT  CAST(ROUND(AVG(amount),2) AS DECIMAL(10,2)) as AverageBill
 FROM billing_cleaned;
 
 -- 
@@ -577,3 +577,341 @@ GROUP BY d.hospital_branch
 ORDER BY TotalAppointments DESC;
 
 
+-- Appointment Analytics
+-- Appointment status distribution
+SELECT
+    status,
+    COUNT(*) AS TotalAppointments,
+    CAST(ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(),2) AS DECIMAL(10,2)) AS Percentage
+FROM appointments_cleaned
+GROUP BY status
+ORDER BY TotalAppointments DESC;
+
+-- Most common reasons for visit
+SELECT
+    reason_for_visit,
+    COUNT(*) AS TotalAppointments,
+    CAST(ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(),2) AS DECIMAL(10,2)) AS Percentage
+FROM appointments_cleaned
+GROUP BY reason_for_visit
+ORDER BY TotalAppointments DESC;
+
+-- Monthly appointment trend
+SELECT
+    DATENAME(MONTH, appointment_date) AS MonthName,
+    MONTH(appointment_date) AS MonthNumber,
+    COUNT(*) AS TotalAppointments
+FROM appointments_cleaned
+GROUP BY
+    DATENAME(MONTH, appointment_date),
+    MONTH(appointment_date)
+ORDER BY MonthNumber;
+
+-- busiest day of the week
+SELECT
+    DATENAME(WEEKDAY, appointment_date) AS WeekDay,
+    COUNT(*) AS TotalAppointments
+FROM appointments_cleaned
+GROUP BY DATENAME(WEEKDAY, appointment_date)
+ORDER BY TotalAppointments DESC;
+
+-- peak appointment hours
+SELECT
+    DATEPART(HOUR, appointment_time) AS AppointmentHour,
+    COUNT(*) AS TotalAppointments
+FROM appointments_cleaned
+GROUP BY DATEPART(HOUR, appointment_time)
+ORDER BY AppointmentHour;
+
+-- Doctor no show analysis
+SELECT
+    d.first_name + ' ' + d.last_name AS Doctor,
+    COUNT(*) AS NoShows
+FROM appointments_cleaned a
+JOIN doctors_cleaned d
+    ON a.doctor_id = d.doctor_id
+WHERE status = 'No-show'
+GROUP BY
+    d.first_name,
+    d.last_name
+ORDER BY NoShows DESC;
+
+-- Cancellation analysis
+SELECT
+    d.specialization,
+    COUNT(*) AS CancelledAppointments
+FROM appointments_cleaned a
+JOIN doctors_cleaned d
+ON a.doctor_id = d.doctor_id
+WHERE status='Cancelled'
+GROUP BY d.specialization
+ORDER BY CancelledAppointments DESC;
+
+-- Treatment and Revenue Aanalytics
+-- Revenue by treatment type
+SELECT
+    t.treatment_type,
+    COUNT(*) AS TotalTreatments,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(10,2)) AS TotalRevenue,
+    CAST(ROUND(AVG(b.amount),2) AS DECIMAL(10,2)) AS AverageRevenue
+FROM treatment_cleaned t
+JOIN billing_cleaned b
+ON t.treatment_id = b.treatment_id
+GROUP BY t.treatment_type
+ORDER BY TotalRevenue DESC;
+
+-- Average cost by treatment type 
+SELECT
+    treatment_type,
+    COUNT(*) AS TotalTreatments,
+    CAST(ROUND(AVG(cost),2) AS DECIMAL(10,2)) AS AverageCost,
+    CAST(ROUND(MIN(cost),2) AS DECIMAL(10,2)) AS MinimumCost,
+    CAST(ROUND(MAX(cost),2) AS DECIMAL(10,2)) AS MaximumCost
+FROM treatment_cleaned
+GROUP BY treatment_type
+ORDER BY AverageCost DESC;
+
+-- Revenue by doctor
+SELECT
+    d.first_name + ' ' + d.last_name AS Doctor,
+    d.specialization,
+    COUNT(DISTINCT a.appointment_id) AS TotalAppointments,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(10,2)) AS TotalRevenue
+FROM doctors_cleaned d
+JOIN appointments_cleaned a
+    ON d.doctor_id = a.doctor_id
+JOIN treatment_cleaned t
+    ON a.appointment_id = t.appointment_id
+JOIN billing_cleaned b
+    ON t.treatment_id = b.treatment_id
+GROUP BY
+    d.first_name,
+    d.last_name,
+    d.specialization
+ORDER BY TotalRevenue DESC;
+
+-- Revenue by specialisation 
+SELECT
+    d.specialization,
+    COUNT(*) AS TotalTreatments,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(10,2)) AS TotalRevenue,
+    CAST(ROUND(AVG(b.amount),2) AS DECIMAL(10,2)) AS AverageRevenue
+FROM doctors_cleaned d
+JOIN appointments_cleaned a
+ON d.doctor_id = a.doctor_id
+JOIN treatment_cleaned t
+ON a.appointment_id = t.appointment_id
+JOIN billing_cleaned b
+ON t.treatment_id = b.treatment_id
+GROUP BY d.specialization
+ORDER BY TotalRevenue DESC;
+
+-- Revenue by Hospital branch
+SELECT
+    d.hospital_branch,
+    COUNT(*) AS TotalTreatments,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(10,2)) AS TotalRevenue
+FROM doctors_cleaned d
+JOIN appointments_cleaned a
+ON d.doctor_id = a.doctor_id
+JOIN treatment_cleaned t
+ON a.appointment_id = t.appointment_id
+JOIN billing_cleaned b
+ON t.treatment_id = b.treatment_id
+GROUP BY d.hospital_branch
+ORDER BY TotalRevenue DESC;
+
+-- Revenue by payment method
+SELECT
+    payment_method,
+    COUNT(*) AS TotalBills,
+    CAST(ROUND(SUM(amount),2) AS DECIMAL(10,2)) AS TotalRevenue,
+    CAST(ROUND(AVG(amount),2) AS DECIMAL(10,2)) AS AverageBill
+FROM billing_cleaned
+GROUP BY payment_method
+ORDER BY TotalRevenue DESC;
+
+-- Revenue by insurance provider
+SELECT
+    p.insurance_provider,
+    COUNT(*) AS TotalBills,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(10,2)) AS TotalRevenue,
+    CAST(ROUND(AVG(b.amount),2) AS DECIMAL(10,2)) AS AverageBill
+FROM patients_cleaned p
+JOIN billing_cleaned b
+ON p.patient_id = b.patient_id
+GROUP BY p.insurance_provider
+ORDER BY TotalRevenue DESC;
+
+-- Highest revenue treatments
+SELECT TOP 10
+    t.treatment_type,
+    b.amount
+FROM treatment_cleaned t
+JOIN billing_cleaned b
+ON t.treatment_id = b.treatment_id
+ORDER BY b.amount DESC;
+
+-- Executive analytics
+-- which doctor generates the highest revenue per appointment?
+SELECT
+    d.first_name + ' ' + d.last_name AS Doctor,
+    d.specialization,
+    COUNT(DISTINCT a.appointment_id) AS TotalAppointments,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(12,2)) AS TotalRevenue,
+    CAST(ROUND(SUM(b.amount) * 1.0 /
+        COUNT(DISTINCT a.appointment_id),2) AS DECIMAL(10,2))
+        AS RevenuePerAppointment
+FROM doctors_cleaned d
+JOIN appointments_cleaned a
+    ON d.doctor_id = a.doctor_id
+JOIN treatment_cleaned t
+    ON a.appointment_id = t.appointment_id
+JOIN billing_cleaned b
+    ON t.treatment_id = b.treatment_id
+GROUP BY
+    d.first_name,
+    d.last_name,
+    d.specialization
+ORDER BY RevenuePerAppointment DESC;
+
+-- appointment completion rate by specialisation
+SELECT
+    d.specialization,
+    COUNT(*) AS TotalAppointments,
+    SUM(CASE
+            WHEN a.status='Completed'
+            THEN 1 ELSE 0
+        END) AS CompletedAppointments,
+    CAST(
+        ROUND(
+            100.0 *
+            SUM(CASE WHEN a.status='Completed'
+                THEN 1 ELSE 0 END)
+            / COUNT(*),2)
+        AS DECIMAL(5,2))
+        AS CompletionRate
+FROM appointments_cleaned a
+JOIN doctors_cleaned d
+ON a.doctor_id=d.doctor_id
+GROUP BY d.specialization
+ORDER BY CompletionRate DESC;
+
+-- No show rate by doctor
+-- which doctors experience the highest patient no show rate?
+SELECT
+    d.first_name + ' ' + d.last_name AS Doctor,
+    COUNT(*) AS TotalAppointments,
+    SUM(CASE
+        WHEN status='No-show'
+        THEN 1 ELSE 0 END) AS NoShows,
+    CAST(
+        ROUND(
+        100.0*
+        SUM(CASE
+        WHEN status='No-show'
+        THEN 1 ELSE 0 END)
+        /COUNT(*),2)
+        AS DECIMAL(5,2))
+        AS NoShowRate
+FROM doctors_cleaned d
+JOIN appointments_cleaned a
+ON d.doctor_id=a.doctor_id
+GROUP BY
+d.first_name,
+d.last_name
+ORDER BY NoShowRate DESC;
+
+-- Average Revenue by insurance provider
+-- Which insurance provider contributes the highest value patients?
+SELECT
+    p.insurance_provider,
+    COUNT(*) AS Bills,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(12,2))
+        AS TotalRevenue,
+    CAST(ROUND(AVG(b.amount),2) AS DECIMAL(10,2))
+        AS AverageBill
+FROM patients_cleaned p
+JOIN billing_cleaned b
+ON p.patient_id=b.patient_id
+GROUP BY p.insurance_provider
+ORDER BY AverageBill DESC;
+
+-- Monthly revenue trend
+-- which month generates the highest revenue?
+SELECT
+    DATENAME(MONTH,b.bill_date) AS MonthName,
+    MONTH(b.bill_date) AS MonthNumber,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(12,2))
+        AS Revenue
+FROM billing_cleaned b
+GROUP BY
+DATENAME(MONTH,b.bill_date),
+MONTH(b.bill_date)
+ORDER BY MonthNumber;
+
+-- branch efficiency
+-- which branch generates the highest revenue per appointment?
+SELECT
+    d.hospital_branch,
+    COUNT(DISTINCT a.appointment_id) AS Appointments,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(12,2))
+        AS Revenue,
+    CAST(
+        ROUND(
+        SUM(b.amount)
+        /
+        COUNT(DISTINCT a.appointment_id),2)
+        AS DECIMAL(10,2))
+        AS RevenuePerAppointment
+FROM doctors_cleaned d
+JOIN appointments_cleaned a
+ON d.doctor_id=a.doctor_id
+JOIN treatment_cleaned t
+ON a.appointment_id=t.appointment_id
+JOIN billing_cleaned b
+ON t.treatment_id=b.treatment_id
+GROUP BY d.hospital_branch
+ORDER BY RevenuePerAppointment DESC;
+
+
+-- Highest value patients
+-- which patients contribute the most revenue?
+SELECT TOP 5
+    p.patient_id,
+    p.first_name,
+    p.last_name,
+    p.insurance_provider,
+    COUNT(b.bill_id) AS TotalBills,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(12,2))
+        AS LifetimeRevenue
+FROM patients_cleaned p
+JOIN billing_cleaned b
+ON p.patient_id=b.patient_id
+GROUP BY
+    p.patient_id,
+    p.first_name,
+    p.last_name,
+    p.insurance_provider
+ORDER BY LifetimeRevenue DESC;
+
+-- Ranking doctors using a window function
+SELECT
+    d.first_name + ' ' + d.last_name AS Doctor,
+    d.specialization,
+    CAST(ROUND(SUM(b.amount),2) AS DECIMAL(12,2))
+        AS Revenue,
+    RANK() OVER(
+        ORDER BY SUM(b.amount) DESC
+    ) AS RevenueRank
+FROM doctors_cleaned d
+JOIN appointments_cleaned a
+ON d.doctor_id=a.doctor_id
+JOIN treatment_cleaned t
+ON a.appointment_id=t.appointment_id
+JOIN billing_cleaned b
+ON t.treatment_id=b.treatment_id
+GROUP BY
+d.first_name,
+d.last_name,
+d.specialization;
