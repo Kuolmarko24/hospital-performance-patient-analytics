@@ -221,16 +221,5 @@ Business Intelligence
 Dashboard Design
 Data Storytelling
 
-I welcome your feedback and would love to connect with fellow data professionals.
 
-#SQL #PowerBI #DataAnalytics #HealthcareAnalytics #BusinessIntelligence #OpenToWork
-
-My Suggested Timeline
-
-To keep the quality high and avoid rushing, I recommend we complete these deliverables over the next few sessions:
-
-Session 1: Create a polished README.md (complete and ready for GitHub).
-Session 2: Refactor and document your SQL scripts into a professional structure.
-Session 3: Build the complete four-page Power BI dashboard with executive-level design and interactivity.
-Session 4: Finalize the GitHub repository, prepare dashboard screenshots, and publish the LinkedIn post.
 
