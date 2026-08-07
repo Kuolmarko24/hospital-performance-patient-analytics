@@ -928,6 +928,42 @@ SELECT
 	insurance_provider
 FROM patients_cleaned;
 
+ALTER VIEW vw_patient_demographics AS
+SELECT
+    patient_id,
+    first_name,
+    last_name,
+    gender,
+    date_of_birth,
+
+    DATEDIFF(YEAR, date_of_birth, GETDATE()) AS Age,
+
+    CASE
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 30 THEN 'Under 30'
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 40 THEN '30-39'
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 50 THEN '40-49'
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 60 THEN '50-59'
+        ELSE '60+'
+    END AS Age_Group,
+
+    CASE
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 30 THEN 1
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 40 THEN 2
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 50 THEN 3
+        WHEN DATEDIFF(YEAR, date_of_birth, GETDATE()) < 60 THEN 4
+        ELSE 5
+    END AS Age_Group_Sort,
+
+    registration_date,
+    insurance_provider,
+    insurance_number,
+    contact_number,
+    address,
+    email
+FROM patients_cleaned;
+
+SELECT TOP 5 *
+FROM vw_patient_demographics;
 
 -- view for the doctor
 CREATE VIEW vw_doctor_information AS
