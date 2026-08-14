@@ -1,9 +1,29 @@
 # Hospital Performance and Patient Analytics
 
-An end-to-end data analytics project that transforms hospital data into actionable management information using **SQL Server** and **Microsoft Power BI**.
+> **End-to-end healthcare data analytics project using SQL Server and Microsoft Power BI to analyze patients, appointments, treatments, doctors, and hospital revenue.**
+
+This project demonstrates a practical data analytics workflow from data cleaning and SQL analysis to interactive Power BI dashboards and business-focused insights.
 
 ---
+## 📊 Dashboard Preview
 
+The project culminates in a four-page interactive Power BI dashboard covering executive performance, patient and clinical analytics, appointment operations, and treatment and revenue performance.
+
+### Executive Overview
+
+![Executive Overview](Screenshots/Executive_Overview.png)
+
+### Patient & Clinical Analytics
+
+![Patient & Clinical Analytics](Screenshots/Patient_Clinical_Analytics.png)
+
+### Appointment & Operational Analytics
+
+![Appointment & Operational Analytics](Screenshots/Appointment_Operational_Analytics.png)
+
+### Treatment & Revenue Analytics
+
+![Treatment & Revenue Analytics](Screenshots/Treatment_Revenue_Analytics.png)
 ## 📌 Project Overview
 
 The Hospital Performance and Patient Analytics project was developed to demonstrate a complete data analytics workflow—from data preparation and SQL analysis to interactive dashboard development and business insight.
